@@ -21,15 +21,29 @@ export default function TransactionsPage() {
   const [sortBy, setSortBy] = useState('date_desc');
   const [confirmDelete, setConfirmDelete] = useState(null);
 
+  const getDefaultCategoryId = (type) => {
+    const match = categories.find(c => c.type === type);
+    return match ? String(match.id) : '';
+  };
+
   const openAdd = () => {
     setEditTx(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, categoryId: getDefaultCategoryId(EMPTY_FORM.type) });
     setShowModal(true);
   };
 
   const openEdit = (tx) => {
+    const fallbackCategoryId = getDefaultCategoryId(tx.type);
+    const selectedCategoryId = String(tx.categoryId ?? fallbackCategoryId);
+    const hasValidTypeCategory = categories.some(
+      c => c.type === tx.type && String(c.id) === selectedCategoryId
+    );
     setEditTx(tx);
-    setForm({ ...tx, categoryId: String(tx.categoryId), amount: String(tx.amount) });
+    setForm({
+      ...tx,
+      categoryId: hasValidTypeCategory ? selectedCategoryId : fallbackCategoryId,
+      amount: String(tx.amount),
+    });
     setShowModal(true);
   };
 
@@ -213,7 +227,11 @@ export default function TransactionsPage() {
                       type="button"
                       className={`btn ${form.type === t ? (t === 'INCOME' ? 'btn-success' : 'btn-danger') : 'btn-secondary'}`}
                       style={{ flex: 1, justifyContent: 'center' }}
-                      onClick={() => setForm(f => ({ ...f, type: t, categoryId: '' }))}
+                      onClick={() => setForm(f => {
+                        if (f.type === t) return f;
+                        const nextCategoryId = getDefaultCategoryId(t);
+                        return { ...f, type: t, categoryId: nextCategoryId };
+                      })}
                     >
                       {t === 'INCOME' ? '↑ Income' : '↓ Expense'}
                     </button>
